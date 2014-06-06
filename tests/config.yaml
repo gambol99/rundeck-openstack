@@ -1,0 +1,37 @@
+#
+#   Author: Rohith
+#   Date: 2014-05-22 12:16:53 +0100 (Thu, 22 May 2014)
+#
+#  vim:ts=4:sw=4:et
+#
+---
+openstack:
+  - name: qa
+    username: admin
+    tenant: admin
+    api_key: secrete
+    auth_url: http://horizon.domain.com:5000/v2.0/tokens 
+tags:
+  '.*':
+    - openstack
+  '^wiki.*': 
+    - web 
+    - web_server
+  '^qa[0-9]{3}-[a-z0-9]{3}':
+    - qa_server
+    - web
+templates:
+  - name: resourceyaml
+    template: |
+      ---
+      <%= node['hostname'] %>:
+        description: <%= node['description'] %> 
+        hostname: <%= node['hostname'] %> 
+        nodename: <%= node['hostname'] %> 
+        osArch: <%= node['os_arch'] %> 
+        osFamily: <%= node['os_family'] %> 
+        osName: <%= node['os_name'] %> 
+        osVersion: <%= node['os_version'] %> 
+        tags: '<%= node['cluster'] -%>, <%= node['tags'].join(\',\'') %>'
+        username: '<%= node['owner'] %>'
+      <%- end -%>
