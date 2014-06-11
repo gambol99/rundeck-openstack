@@ -1,7 +1,7 @@
 RunDesk Openstack
 =================
 
-The gem is a small integretion piece between Rundeck and Openstack. The gem is used to pull and generate the the instance definitions of one or more openstack clusters
+The gem is a small integretion piece between Rundeck and Openstack. The gem is used to pull and generate a node resource file from one or more openstack clusters
 
 An example use
 
