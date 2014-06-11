@@ -44,14 +44,14 @@ An example configuration
       - name: resourceyaml
         template: |
           ---
+          <<% @nodes.each do |node| %>
           <%= node['hostname'] %>:
-            description: <%= node['description'] %> 
-            hostname: <%= node['hostname'] %> 
-            nodename: <%= node['hostname'] %> 
-            osArch: <%= node['os_arch'] %> 
-            osFamily: <%= node['os_family'] %> 
-            osName: <%= node['os_name'] %> 
-            osVersion: <%= node['os_version'] %> 
-            tags: '<%= node['cluster'] -%>, <%= node['tags'].join(\',\'') %>'
-            username: '<%= node['owner'] %>'
-          <%- end -%>
+            hostname: <%= node['hostname'] %>
+            nodename: <%= node['hostname'].split('.').first %> 
+            tags: '<%= node['tags'].concat( [ node['cluster'] ] ).join(', ') %>'
+            username: rundeck 
+            <% node.each_pair do |k,v| -%>
+          <%- next if k =~ /^(hostname|tags)$/ -%>
+          <%= k %>: <%= v %>
+            <% end -%>
+          <% end -%>
