@@ -6,7 +6,12 @@
 #
 ---
 openstack:
-  - name: qa
+  - name: staging
+    username: admin
+    tenant: admin
+    api_key: secrete
+    auth_url: http://horizon.qa.domain.com:5000/v2.0/tokens
+  - name: production
     username: admin
     tenant: admin
     api_key: secrete
