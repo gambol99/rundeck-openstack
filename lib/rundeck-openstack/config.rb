@@ -5,6 +5,7 @@
 #  vim:ts=4:sw=4:et
 #
 require 'yaml'
+require 'pp'
 
 module RunDeckOpenstack
   class Config
@@ -25,51 +26,7 @@ module RunDeckOpenstack
   <% end -%>
 <% end -%>
 EOF
-
-    Config_Template = <<-EOF
----
-# the openstack credentials
-openstack:
-  - name: qa
-    username: USERNAME
-    tenant: TENANT
-    api_key: PASSWORD
-    auth_url: KEYSTONE_URL:5000/v2.0/tokens
-  - name: prod
-    username: USERNAME
-    tenant: TENANT
-    api_key: PASSWORD
-    auth_url: KEYSTONE_URL:5000/v2.0/tokens
-
-# The tags regex the hostnames and if they match allow us to add extra tags
-use_metatags: true      # you any metadata associated with the instance in the tags
-tags:
-  '.*':
-    - openstack
-  '^web[0-9]{3}-[a-z0-9]{3}': 
-    - web 
-  '^qa[0-9]{3}-[a-z0-9]{3}':
-    - qa_server
-    - web
-
-templates:
-  - name: resourceyaml
-    template: |
-      ---
-      <%- @nodes.each do |node| -%>
-      <%= node['hostname'] %>:
-        description: <%= node['description'] %> 
-        hostname: <%= node['hostname'] %> 
-        nodename: <%= node['hostname'] %> 
-        osArch: <%= node['os_arch'] %> 
-        osFamily: <%= node['os_family'] %> 
-        osName: <%= node['os_name'] %> 
-        osVersion: <%= node['os_version'] %> 
-        tags: '<%= node['cluster'] -%>, <%= node['tags'].join(\',\'') %>'
-        username: '<%= node['owner'] %>'
-      <%- end -%>
-EOF
-
+    
     attr_reader :config
 
     def initialize filename, options 
@@ -77,10 +34,6 @@ EOF
       @config   = validate_configuration filename, options
       @options  = options
       @filename = filename
-    end
-
-    def self.config 
-      Config_Template
     end
 
     def changed?
@@ -121,17 +74,10 @@ EOF
         end
       end
       # step: lets validate templates or inject the default one
-      if !config.has_key? 'templates' or config['templates'].nil? and !options.template
-        # we have no templates in config and the user has not specified any
-        raise ArgumentError, 'there is no templates in configuration and you have not specified a custom template'
-      end
-      # step: do we have a custom template
-      if options.template 
-        validate_file options.template
-        # step: load the template 
-        config.erb File.read( options.template )
-      else
+      if !config.template
         config.erb Default_Template
+      else
+        config.erb config.template
       end
       config
     end

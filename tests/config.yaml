@@ -6,15 +6,10 @@
 #
 ---
 openstack:
-  - name: staging
+  - name: qa
     username: admin
     tenant: admin
-    api_key: secrete
-    auth_url: http://horizon.qa.domain.com:5000/v2.0/tokens
-  - name: production
-    username: admin
-    tenant: admin
-    api_key: secrete
+    api_key: password
     auth_url: http://horizon.domain.com:5000/v2.0/tokens 
 tags:
   '.*':
@@ -25,18 +20,15 @@ tags:
   '^qa[0-9]{3}-[a-z0-9]{3}':
     - qa_server
     - web
-templates:
-  - name: resourceyaml
-    template: |
-      ---
-      <%= node['hostname'] %>:
-        description: <%= node['description'] %> 
-        hostname: <%= node['hostname'] %> 
-        nodename: <%= node['hostname'] %> 
-        osArch: <%= node['os_arch'] %> 
-        osFamily: <%= node['os_family'] %> 
-        osName: <%= node['os_name'] %> 
-        osVersion: <%= node['os_version'] %> 
-        tags: '<%= node['cluster'] -%>, <%= node['tags'].join(\',\'') %>'
-        username: '<%= node['owner'] %>'
-      <%- end -%>
+template: |
+  <% @nodes.each do |node| %>
+  <%= node['hostname'] %>:
+    hostname: <%= node['hostname'] %>
+    nodename: <%= node['hostname'].split('.').first %> 
+    tags: '<%= node['tags'].concat( [ node['cluster'] ] ).join(', ') %>'
+    username: rundeck 
+  <% node.each_pair do |k,v| -%>
+  <%- next if k =~ /^(hostname|tags)$/ -%>
+    <%= k %>: <%= v %>
+    <%- end -%>
+  <% end -%>

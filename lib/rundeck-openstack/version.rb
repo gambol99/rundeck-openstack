@@ -5,5 +5,5 @@
 #  vim:ts=2:sw=2:et
 #
 module RunDeckOpenstack
-    VERSION = "0.0.1"
+    VERSION = "0.0.2"
 end
