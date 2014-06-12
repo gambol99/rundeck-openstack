@@ -55,3 +55,19 @@ An example configuration
           <%= k %>: <%= v %>
             <% end -%>
           <% end -%>
+
+Tags
+----
+
+Tags simply provide a means of adding custom tags for rundeck to filter upon; The hostname is regexed and any node that matches inhierits those tags - alternative we can pull the tags from the openstack metadata
+
+      tags:
+      '.*':
+        - openstack
+      '^wiki.*': 
+        - web 
+        - web_server
+      '^qa[0-9]{3}-[a-z0-9]{3}':
+        - qa_server
+        - web
+
