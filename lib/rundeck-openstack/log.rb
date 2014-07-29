@@ -11,7 +11,7 @@ module RunDeckOpenstack
     class << self
       attr_accessor :logger
       def init options = {}
-        self.logger = ::Logger.new( options[:std] )
+        self.logger = ::Logger.new( options[:verbose] )
       end
 
       def method_missing(m,*args,&block)

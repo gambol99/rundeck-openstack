@@ -8,15 +8,16 @@ $:.unshift File.join(File.dirname(__FILE__),'.','./')
 require 'fog'
 require 'erb'
 require 'config'
+require 'cache'
 
 module RunDeckOpenstack
   class Loader
     include RunDeckOpenstack::Utils
+    include RunDeckOpenstack::Cache
 
     attr_reader :config, :options, :nodes
 
     def initialize app_options
-      # step: validate the configuration file
       @options = app_options
       @nodes   = []
     end
@@ -30,20 +31,19 @@ module RunDeckOpenstack
         filter['hostname'] ||= '.*'
         # step: iterate and pull the nodes
         @nodes = []
-        settings['openstack'].each do |os|
+        settings['openstack'].each do |stack|
           # step: are we filtering our certain openstack clusters
-          next unless os['name'] =~ /#{filter['cluster']}/
+          next unless stack['name'] =~ /#{filter['cluster']}/
           # step: classifiy the nodes
-          retrieve_nodes( os ).each do |node|
+          retrieve_nodes( stack ).each do |node|
             # step: filter out anything we don't care about
             next unless node['hostname'] =~ /#{filter['hostname']}/
             @nodes << node
           end
         end
-        # step: if requested, lets template the output
         ERB.new( settings['erb'], nil, '-' ).result( binding )
       rescue Exception => e
-        puts 'classify: we have encountered an error: %s' % [ e.message ]
+        error 'classify: we have encountered an error: %s' % [ e.message ]
         raise Exception, e.message
       end
     end
@@ -116,28 +116,17 @@ module RunDeckOpenstack
       return ( !tenants.empty? ) ? tenants.first.name : nil
     end
 
-    def cached key, &block
-      if cache.has_key? key
-        cache[key]
-      else
-        cache[key] = yield
-      end
-    end
-
-    def cache
-      @cache ||= {}
-    end
-
     def settings options = @options
       @config ||= RunDeckOpenstack::Config::new options[:config], options
     end
 
     def options
-      @options ||= default_options
+      @options ||= set_default_options
     end
 
-    def default_options
+    def set_default_options
       {
+        :verbose => Logger.INFO,
         :config => "#{ENV['HOME']}/openstack.yaml"
       }
     end
