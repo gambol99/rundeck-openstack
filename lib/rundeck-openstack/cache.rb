@@ -7,6 +7,7 @@
 #
 module RunDeckOpenstack
   module Cache
+    private
     def cached key, &block
       if cache.has_key? key
         cache[key]
