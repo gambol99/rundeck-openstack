@@ -19,21 +19,20 @@ class Loader
 
   attr_reader :config, :options, :nodes
 
-  def initialize options 
+  def initialize options
     raise ArgumentError, 'the options should be a hash'                unless options.is_a? Hash
     raise ArgumentError, 'you have not specify any configuration file' unless options.has_key? :config
     # step: validate the configuration file
-    config   = RunDeckOpenstack::Config::new options.config, options
+    @config   = RunDeckOpenstack::Config::new options.config, options
     # step: set the options and config
     @cache   = {}
     @nodes   = []
     @options = options
-    @config  = config
   end
 
   def classify filter = {}
-    begin  
-      # step: check if the configuration has changed and if so reload it 
+    begin
+      # step: check if the configuration has changed and if so reload it
       @config = @config.reload if @config.changed?
       # step: specify the defaults
       %w(cluster hostname).each { |x| filter[x] = '.*' unless filter.has_key? x }
@@ -49,16 +48,16 @@ class Loader
           @nodes << node
         end
       end
-      # step: if requested, lets template the output      
-      ERB.new( @config.erb, nil, '-' ).result( binding ) 
-    rescue Exception => e 
+      # step: if requested, lets template the output
+      ERB.new( @config.erb, nil, '-' ).result( binding )
+    rescue Exception => e
       puts 'classify: we have encountered an error: %s' % [ e.message ]
       raise Exception, e.message
     end
   end
 
   def flush
-    @cache   = {}
+    @cache = {}
   end
 
   def keys
@@ -66,14 +65,15 @@ class Loader
   end
 
   private
-  def openstack_connection credentials 
+  def openstack_connection credentials
     #debug 'openstack_connection: attemping to connect to openstack: %s' % [ credentials['auth_url'] ]
-    connection = ::Fog::Compute.new( :provider => :OpenStack,
+    @connection ||= ::Fog::Compute.new( :provider => :OpenStack,
       :openstack_auth_url   => credentials.auth_url,
       :openstack_api_key    => credentials.api_key,
       :openstack_username   => credentials.username,
       :openstack_tenant     => credentials.tenant
     )
+    @connection
     #debug 'successfully connected to openstack, username: ' << credentials['username'] << ' auth: ' << credentials.auth_url
   end
 
@@ -99,21 +99,21 @@ class Loader
         'hypervisor' => instance.os_ext_srv_attr_host,
         'flavor_id'  => instance.flavor['id'],
       }
-      # step: lets add any tags from the config 
-      if @config.tags 
+      # step: lets add any tags from the config
+      if @config.tags
         @config.tags.keys.each do |regex|
           next unless node['hostname'] =~ /#{regex}/
           ( node['tags'] || [] ) << @config.tags[regex]
         end
       end
-
-      #debug 'retrieve_nodes: pulling the image, flavor and tenant for the instance'
-      set( instance.image['id'], connection.images.select  { |x| x if x.id == node['image_id'] }.first.name )  unless cached? instance.image['id'] 
-      #set( instance.image['id'], connection.images.select  { |x| x if x.id == node['image_id'] }.first.name )  unless cached? instance.image['id'] 
-      set( instance.tenant_id,   connection.tenants.select { |x| x if x.id == node['tenant_id'] }.first.name ) unless cached? instance.tenant_id      
+      # step: find the image
+      image = connection.images.select  { |x| x.id == node['image_id'] }
+      tenant = connection.tenants.select { |x| x if x.id == node['tenant_id'] }
+      set( instance.image['id'], ( !image.empty? ) ? image.first.name : 'image_deleted' ) unless cached? instance.image['id']
+      set( instance.tenant_id, ( !tenant.empty? ) ? tenant.first.name : 'tenant_deletet' ) unless cached? instance.tenant_id
       node['image']   = cached instance.image['id']
       node['tenant']  = cached instance.tenant_id
-      nodes << node      
+      nodes << node
     end
     nodes
   end
@@ -122,7 +122,7 @@ class Loader
     @cache[key] = value
   end
 
-  def cached key 
+  def cached key
     @cache[key] || nil
   end
 
