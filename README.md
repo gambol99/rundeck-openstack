@@ -1,3 +1,6 @@
+[Deprecated - using rundeck-nodes instead]
+
+
 RunDesk Openstack
 =================
 
